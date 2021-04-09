@@ -952,6 +952,10 @@ UNQLITE_APIEXPORT const char * unqlite_lib_version(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_signature(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_ident(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_copyright(void);
+
+/* EYEFACTIVE EXTENSIONS */
+UNQLITE_APIEXPORT unqlite_kv_cursor* unqlite_yfext_kv_prefetch(unqlite *pDb,const void *pKey,int nKeyLen, unqlite_int64 *pBufLen);
+UNQLITE_APIEXPORT int unqlite_yfext_kv_postfetch(unqlite_kv_cursor* pCur, void *pBuf, unqlite_int64 *pBufLen);
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

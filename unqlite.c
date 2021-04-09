@@ -60241,3 +60241,77 @@ UNQLITE_PRIVATE int unqliteRegisterJx9Functions(unqlite_vm *pVm)
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+unqlite_kv_cursor* unqlite_yfext_kv_prefetch(unqlite *pDb,const void *pKey,int nKeyLen, unqlite_int64 *pBufLen)
+{
+  unqlite_kv_methods* pMethods;
+  unqlite_kv_engine * pEngine;
+  unqlite_kv_cursor * pCur;
+  int               rc;
+
+  if (UNQLITE_DB_MISUSE(pDb))
+  {
+    return 0;
+  }
+#if defined(UNQLITE_ENABLE_THREADS)
+  /* Acquire DB mutex */
+   SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
+   if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
+     UNQLITE_THRD_DB_RELEASE(pDb) ){
+       return 0; /* Another thread have released this instance */
+   }
+#endif
+  /* Point to the underlying storage engine */
+  pEngine  = unqlitePagerGetKvEngine(pDb);
+  pMethods = pEngine->pIo->pMethods;
+  pCur     = pDb->sDB.pCursor;
+  if (nKeyLen < 0)
+  {
+    /* Assume a null terminated string and compute it's length */
+    nKeyLen = SyStrlen((const char*) pKey);
+  }
+  if (!nKeyLen)
+  {
+    unqliteGenError(pDb, "Empty key");
+    rc = UNQLITE_EMPTY;
+  }
+  else
+  {
+    /* Seek to the record position */
+    rc = pMethods->xSeek(pCur, pKey, nKeyLen, UNQLITE_CURSOR_MATCH_EXACT);
+  }
+  if (rc == UNQLITE_OK)
+  {
+    /* Data length only */
+    rc = pMethods->xDataLength(pCur, pBufLen);
+  }
+
+  if (rc == UNQLITE_OK)
+  {
+    return pCur;
+  }
+
+  return 0;
+}
+
+int unqlite_yfext_kv_postfetch(unqlite_kv_cursor* pCur, void *pBuf, unqlite_int64 *pBufLen)
+{
+  int               rc;
+
+  SyBlob sBlob;
+
+  /* Initialize the data consumer */
+  SyBlobInitFromBuf(&sBlob, pBuf, (sxu32) *pBufLen);
+  /* Consume the data */
+  rc = pCur->pStore->pIo->pMethods->xData(pCur, unqliteDataConsumer, &sBlob);
+  /* Data length */
+  *pBufLen = (unqlite_int64) SyBlobLength(&sBlob);
+  /* Cleanup */
+  SyBlobRelease(&sBlob);
+
+#if defined(UNQLITE_ENABLE_THREADS)
+  /* Leave DB mutex */
+   SyMutexLeave(sUnqlMPGlobal.pMutexMethods,pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
+#endif
+  return rc;
+}
