@@ -25218,6 +25218,7 @@ static sxi32 VmJsonEncode(
 		}else if( jx9_value_is_string(pIn) ){
 				const char *zIn, *zEnd;
 				int c;
+				int bApplyOriginal = 1;
 				/* Encode the string */
 				zIn = jx9_value_to_string(pIn, &nByte);
 				zEnd = &zIn[nByte];
@@ -25231,12 +25232,31 @@ static sxi32 VmJsonEncode(
 					c = zIn[0];
 					/* Advance the stream cursor */
 					zIn++;
-					if( c == '"' || c == '\\' ){
+					if( c == '"' || c == '\\'){
 						/* Unescape the character */
 						SyBlobAppend(pOut,"\\", sizeof(char));
 					}
-					/* Append character verbatim */
-					SyBlobAppend(pOut,(const char *)&c,sizeof(char));
+					else if(c == '\n'){
+					  SyBlobAppend(pOut,"\\n", sizeof(char) * 2);
+					  bApplyOriginal = 0;
+					}
+					else if(c == '\r'){
+					  SyBlobAppend(pOut,"\\r", sizeof(char) * 2);
+					  bApplyOriginal = 0;
+					}
+					else if(c == '\t'){
+					  SyBlobAppend(pOut,"\\t", sizeof(char) * 2);
+					  bApplyOriginal = 0;
+					}
+					else if(c == '\f'){
+					  SyBlobAppend(pOut,"\\f", sizeof(char) * 2);
+					  bApplyOriginal = 0;
+					}
+
+					if(bApplyOriginal){
+					  /* Append character verbatim */
+					  SyBlobAppend(pOut, (const char*) &c, sizeof(char));
+					}
 				}
 				/* Append the double quote */
 				SyBlobAppend(pOut,"\"",sizeof(char));
