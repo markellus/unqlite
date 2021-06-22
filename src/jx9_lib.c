@@ -729,7 +729,7 @@ static void * MemBackendPoolAlloc(SyMemBackend *pBackend, sxu32 nByte)
 			return 0;
 		}
 		/* Record as big block */
-		pBucket->nBucket = (sxu32)(SXMEM_POOL_MAGIC << 16) | SXU16_HIGH;
+		pBucket->nBucket = (sxu32)((sxu32)SXMEM_POOL_MAGIC << 16) | SXU16_HIGH;
 		return (void *)(pBucket+1);
 	}
 	/* Locate the appropriate bucket */
@@ -752,7 +752,7 @@ static void * MemBackendPoolAlloc(SyMemBackend *pBackend, sxu32 nByte)
 	pNext = pBucket->pNext;
 	pBackend->apPool[nBucket] = pNext;
 	/* Record bucket&magic number */
-	pBucket->nBucket = (SXMEM_POOL_MAGIC << 16) | nBucket;
+	pBucket->nBucket = (sxu32)((sxu32)SXMEM_POOL_MAGIC << 16) | nBucket;
 	return (void *)&pBucket[1];
 }
 JX9_PRIVATE void * SyMemBackendPoolAlloc(SyMemBackend *pBackend, sxu32 nByte)

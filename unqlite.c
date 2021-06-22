@@ -7543,7 +7543,7 @@ static sxi32 ProcessScript(
 	SyBlobReset(&pEngine->xConf.sErrConsumer);
 	/* Compile the script */
 	jx9CompileScript(pVm, &(*pScript), iFlags);
-	if( pVm->sCodeGen.nErr > 0 || pVm == 0){
+	if( pVm->sCodeGen.nErr > 0){
 		sxu32 nErr = pVm->sCodeGen.nErr;
 		/* Compilation error or null ppVm pointer, release this VM */
 		SyMemBackendRelease(&pVm->sAllocator);
@@ -23337,7 +23337,7 @@ JX9_PRIVATE sxi32 jx9HashmapInsert(
 	)
 {
 	sxi32 rc;
-	rc = HashmapInsert(&(*pMap), &(*pKey), &(*pVal));
+	rc = HashmapInsert(&(*pMap), pKey, &(*pVal));
 	return rc;
 }
 /*
@@ -27371,7 +27371,7 @@ static void * MemBackendPoolAlloc(SyMemBackend *pBackend, sxu32 nByte)
 			return 0;
 		}
 		/* Record as big block */
-		pBucket->nBucket = (sxu32)(SXMEM_POOL_MAGIC << 16) | SXU16_HIGH;
+		pBucket->nBucket = (sxu32)((sxu32)SXMEM_POOL_MAGIC << 16) | SXU16_HIGH;
 		return (void *)(pBucket+1);
 	}
 	/* Locate the appropriate bucket */
@@ -27394,7 +27394,7 @@ static void * MemBackendPoolAlloc(SyMemBackend *pBackend, sxu32 nByte)
 	pNext = pBucket->pNext;
 	pBackend->apPool[nBucket] = pNext;
 	/* Record bucket&magic number */
-	pBucket->nBucket = (SXMEM_POOL_MAGIC << 16) | nBucket;
+	pBucket->nBucket = ((sxu32)SXMEM_POOL_MAGIC << 16) | nBucket;
 	return (void *)&pBucket[1];
 }
 JX9_PRIVATE void * SyMemBackendPoolAlloc(SyMemBackend *pBackend, sxu32 nByte)

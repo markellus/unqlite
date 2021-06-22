@@ -1192,7 +1192,7 @@ JX9_PRIVATE sxi32 jx9HashmapInsert(
 	)
 {
 	sxi32 rc;
-	rc = HashmapInsert(&(*pMap), &(*pKey), &(*pVal));
+	rc = HashmapInsert(&(*pMap), pKey, &(*pVal));
 	return rc;
 }
 /*
