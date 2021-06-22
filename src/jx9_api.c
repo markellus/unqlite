@@ -582,7 +582,7 @@ static sxi32 ProcessScript(
 	SyBlobReset(&pEngine->xConf.sErrConsumer);
 	/* Compile the script */
 	jx9CompileScript(pVm, &(*pScript), iFlags);
-	if( pVm->sCodeGen.nErr > 0 || pVm == 0){
+	if(pVm->sCodeGen.nErr > 0){
 		sxu32 nErr = pVm->sCodeGen.nErr;
 		/* Compilation error or null ppVm pointer, release this VM */
 		SyMemBackendRelease(&pVm->sAllocator);
