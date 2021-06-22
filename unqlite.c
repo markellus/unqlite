@@ -25218,7 +25218,7 @@ static sxi32 VmJsonEncode(
 		}else if( jx9_value_is_string(pIn) ){
 				const char *zIn, *zEnd;
 				int c;
-				int bApplyOriginal = 1;
+				int bApplyOriginal;
 				/* Encode the string */
 				zIn = jx9_value_to_string(pIn, &nByte);
 				zEnd = &zIn[nByte];
@@ -25235,6 +25235,7 @@ static sxi32 VmJsonEncode(
 					if( c == '"' || c == '\\'){
 						/* Unescape the character */
 						SyBlobAppend(pOut,"\\", sizeof(char));
+						bApplyOriginal = 1;
 					}
 					else if(c == '\n'){
 					  SyBlobAppend(pOut,"\\n", sizeof(char) * 2);
@@ -25252,10 +25253,13 @@ static sxi32 VmJsonEncode(
 					  SyBlobAppend(pOut,"\\f", sizeof(char) * 2);
 					  bApplyOriginal = 0;
 					}
+					else{
+						bApplyOriginal = 1;
+					}
 
 					if(bApplyOriginal){
-					  /* Append character verbatim */
-					  SyBlobAppend(pOut, (const char*) &c, sizeof(char));
+						/* Append character verbatim */
+						SyBlobAppend(pOut, (const char*) &c, sizeof(char));
 					}
 				}
 				/* Append the double quote */
