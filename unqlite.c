@@ -70,6 +70,8 @@
 /* This file was automatically generated.  Do not edit (Except for compile time directives)! */ 
 #ifndef _UNQLITE_H_
 #define _UNQLITE_H_
+
+#define UNQLITE_ENABLE_THREADS
 /*
  * Symisc UnQLite: An Embeddable NoSQL (Post Modern) Database Engine.
  * Copyright (C) 2012-2019, Symisc Systems http://unqlite.org/
@@ -356,13 +358,10 @@ struct SyMutexMethods
 	int (*xTryEnter)(SyMutex *);    /* [Optional:] Try to enter a mutex */
 	void  (*xLeave)(SyMutex *);	    /* [Required:] Leave a locked mutex */
 };
-#if defined (_MSC_VER) || defined (__MINGW32__) ||  defined (__GNUC__) && defined (__declspec)
-#define SX_APIIMPORT	__declspec(dllimport)
-#define SX_APIEXPORT	__declspec(dllexport)
-#else
+
 #define	SX_APIIMPORT
 #define	SX_APIEXPORT
-#endif
+
 /* Standard return values from Symisc public interfaces */
 #define SXRET_OK       0      /* Not an error */	
 #define SXERR_MEM      (-1)   /* Out of memory */
@@ -60277,14 +60276,7 @@ unqlite_kv_cursor* unqlite_yfext_kv_prefetch(unqlite *pDb,const void *pKey,int n
   {
     return 0;
   }
-#if defined(UNQLITE_ENABLE_THREADS)
-  /* Acquire DB mutex */
-   SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-   if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
-     UNQLITE_THRD_DB_RELEASE(pDb) ){
-       return 0; /* Another thread have released this instance */
-   }
-#endif
+
   /* Point to the underlying storage engine */
   pEngine  = unqlitePagerGetKvEngine(pDb);
   pMethods = pEngine->pIo->pMethods;
@@ -60333,9 +60325,5 @@ int unqlite_yfext_kv_postfetch(unqlite_kv_cursor* pCur, void *pBuf, unqlite_int6
   /* Cleanup */
   SyBlobRelease(&sBlob);
 
-#if defined(UNQLITE_ENABLE_THREADS)
-  /* Leave DB mutex */
-   SyMutexLeave(sUnqlMPGlobal.pMutexMethods,pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-#endif
   return rc;
 }

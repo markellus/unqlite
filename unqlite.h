@@ -4,7 +4,10 @@
 /* Make sure we can call this stuff from C++ */
 #ifdef __cplusplus
  extern "C" {
-#endif 
+#endif
+
+#define UNQLITE_ENABLE_THREADS
+
 /*
  * Symisc UnQLite: An Embeddable NoSQL (Post Modern) Database Engine.
  * Copyright (C) 2012-2019, Symisc Systems http://unqlite.org/
@@ -288,13 +291,10 @@ struct SyMutexMethods
 	int (*xTryEnter)(SyMutex *);    /* [Optional:] Try to enter a mutex */
 	void  (*xLeave)(SyMutex *);	    /* [Required:] Leave a locked mutex */
 };
-#if defined (_MSC_VER) || defined (__MINGW32__) ||  defined (__GNUC__) && defined (__declspec)
-#define SX_APIIMPORT	__declspec(dllimport)
-#define SX_APIEXPORT	__declspec(dllexport)
-#else
+
 #define	SX_APIIMPORT
 #define	SX_APIEXPORT
-#endif
+
 /* Standard return values from Symisc public interfaces */
 #define SXRET_OK       0      /* Not an error */	
 #define SXERR_MEM      (-1)   /* Out of memory */
