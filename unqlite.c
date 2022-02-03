@@ -70,6 +70,8 @@
 /* This file was automatically generated.  Do not edit (Except for compile time directives)! */ 
 #ifndef _UNQLITE_H_
 #define _UNQLITE_H_
+
+#define UNQLITE_ENABLE_THREADS
 /*
  * Symisc UnQLite: An Embeddable NoSQL (Post Modern) Database Engine.
  * Copyright (C) 2012-2019, Symisc Systems http://unqlite.org/
@@ -356,13 +358,10 @@ struct SyMutexMethods
 	int (*xTryEnter)(SyMutex *);    /* [Optional:] Try to enter a mutex */
 	void  (*xLeave)(SyMutex *);	    /* [Required:] Leave a locked mutex */
 };
-#if defined (_MSC_VER) || defined (__MINGW32__) ||  defined (__GNUC__) && defined (__declspec)
-#define SX_APIIMPORT	__declspec(dllimport)
-#define SX_APIEXPORT	__declspec(dllexport)
-#else
+
 #define	SX_APIIMPORT
 #define	SX_APIEXPORT
-#endif
+
 /* Standard return values from Symisc public interfaces */
 #define SXRET_OK       0      /* Not an error */	
 #define SXERR_MEM      (-1)   /* Out of memory */
@@ -730,7 +729,7 @@ struct unqlite_page
 {
   unsigned char *zData;       /* Content of this page */
   void *pUserData;            /* Extra content */
-  pgno pgno;                  /* Page number for this page */
+  pgno iPage;                 /* Page number for this page */
 };
 /*
  * UnQLite handle to the underlying Key/Value Storage Engine (See below).
@@ -25218,6 +25217,7 @@ static sxi32 VmJsonEncode(
 		}else if( jx9_value_is_string(pIn) ){
 				const char *zIn, *zEnd;
 				int c;
+				int bApplyOriginal;
 				/* Encode the string */
 				zIn = jx9_value_to_string(pIn, &nByte);
 				zEnd = &zIn[nByte];
@@ -25231,12 +25231,35 @@ static sxi32 VmJsonEncode(
 					c = zIn[0];
 					/* Advance the stream cursor */
 					zIn++;
-					if( c == '"' || c == '\\' ){
+					if( c == '"' || c == '\\'){
 						/* Unescape the character */
 						SyBlobAppend(pOut,"\\", sizeof(char));
+						bApplyOriginal = 1;
 					}
-					/* Append character verbatim */
-					SyBlobAppend(pOut,(const char *)&c,sizeof(char));
+					else if(c == '\n'){
+					  SyBlobAppend(pOut,"\\n", sizeof(char) * 2);
+					  bApplyOriginal = 0;
+					}
+					else if(c == '\r'){
+					  SyBlobAppend(pOut,"\\r", sizeof(char) * 2);
+					  bApplyOriginal = 0;
+					}
+					else if(c == '\t'){
+					  SyBlobAppend(pOut,"\\t", sizeof(char) * 2);
+					  bApplyOriginal = 0;
+					}
+					else if(c == '\f'){
+					  SyBlobAppend(pOut,"\\f", sizeof(char) * 2);
+					  bApplyOriginal = 0;
+					}
+					else{
+						bApplyOriginal = 1;
+					}
+
+					if(bApplyOriginal){
+						/* Append character verbatim */
+						SyBlobAppend(pOut, (const char*) &c, sizeof(char));
+					}
 				}
 				/* Append the double quote */
 				SyBlobAppend(pOut,"\"",sizeof(char));
@@ -49599,7 +49622,7 @@ static int lhash_read_header(lhash_kv_engine *pEngine,unqlite_page *pHeader)
 	/* Initialiaze the bucket map */
 	pMap = &pEngine->sPageMap;
 	/* Fill in the structure */
-	pMap->iNum = pHeader->pgno;
+	pMap->iNum = pHeader->iPage;
 	/* Next page in the bucket map */
 	SyBigEndianUnpack64(zRaw,&pMap->iNext);
 	zRaw += 8;
@@ -49748,7 +49771,7 @@ static int lhMapWriteRecord(lhash_kv_engine *pEngine,pgno iLogic,pgno iReal)
 		}
 		/* Reflect the change  */
 		pMap->iNext = 0;
-		pMap->iNum = pPage->pgno;
+		pMap->iNum = pPage->iPage;
 		pMap->nRec = 0;
 		pMap->iPtr = 8/* Next page number */+4/* Total records in the map*/;
 		/* Link this page */
@@ -49756,12 +49779,12 @@ static int lhMapWriteRecord(lhash_kv_engine *pEngine,pgno iLogic,pgno iReal)
 		if( rc != UNQLITE_OK ){
 			return rc;
 		}
-		if( pOld->pgno == pEngine->pHeader->pgno ){
+		if( pOld->iPage == pEngine->pHeader->iPage ){
 			/* First page (Hash header) */
-			SyBigEndianPack64(&pOld->zData[4/*magic*/+4/*hash*/+8/* Free page */+8/*current split bucket*/+8/*Maximum split bucket*/],pPage->pgno);
+			SyBigEndianPack64(&pOld->zData[4/*magic*/+4/*hash*/+8/* Free page */+8/*current split bucket*/+8/*Maximum split bucket*/],pPage->iPage);
 		}else{
 			/* Link the new page */
-			SyBigEndianPack64(pOld->zData,pPage->pgno);
+			SyBigEndianPack64(pOld->zData,pPage->iPage);
 			/* Unref */
 			pEngine->pIo->xPageUnref(pOld);
 		}
@@ -49794,7 +49817,7 @@ static int lhMapWriteRecord(lhash_kv_engine *pEngine,pgno iLogic,pgno iReal)
 	if( rc == UNQLITE_OK ){
 		/* Total number of records */
 		pMap->nRec++;
-		if( pPage->pgno == pEngine->pHeader->pgno ){
+		if( pPage->iPage == pEngine->pHeader->iPage ){
 			/* Page one: Always writable */
 			SyBigEndianPack32(
 				&pPage->zData[4/*magic*/+4/*hash*/+8/* Free page */+8/*current split bucket*/+8/*Maximum split bucket*/+8/*Next map page*/],
@@ -49832,7 +49855,7 @@ static int lhPageDefragment(lhpage *pPage)
 			/* No more cells */
 			break;
 		}
-		if( pCell->pPage->pRaw->pgno == pPage->pRaw->pgno ){
+		if( pCell->pPage->pRaw->iPage == pPage->pRaw->iPage ){
 			/* Cell payload if locally stored */
 			zPayload = 0;
 			if( pCell->iOvfl == 0 ){
@@ -50061,7 +50084,7 @@ static int lhCellWriteOvflPayload(lhcell *pCell,const void *pKey,sxu32 nKeylen,.
 	}
 	pFirst = pOvfl;
 	/* Link */
-	pCell->iOvfl = pOvfl->pgno;
+	pCell->iOvfl = pOvfl->iPage;
 	/* Update the cell header */
 	SyBigEndianPack64(&pPage->pRaw->zData[pCell->iStart + 4/*Hash*/ + 4/*Key*/ + 8/*Data*/ + 2 /*Next cell*/],pCell->iOvfl);
 	/* Start the write process */
@@ -50087,7 +50110,7 @@ static int lhCellWriteOvflPayload(lhcell *pCell,const void *pKey,sxu32 nKeylen,.
 				return rc;
 			}
 			/* Link */
-			SyBigEndianPack64(pOvfl->zData,pNew->pgno);
+			SyBigEndianPack64(pOvfl->zData,pNew->iPage);
 			pEngine->pIo->xPageUnref(pOvfl);
 			SyBigEndianPack64(pNew->zData,0); /* Next overflow page on the chain */
 			pOvfl = pNew;
@@ -50106,7 +50129,7 @@ static int lhCellWriteOvflPayload(lhcell *pCell,const void *pKey,sxu32 nKeylen,.
 	}
 	rc = UNQLITE_OK;
 	va_start(ap,nKeylen);
-	pCell->iDataPage = pNew->pgno;
+	pCell->iDataPage = pNew->iPage;
 	pCell->iDataOfft = (sxu16)(zRaw-pNew->zData);
 	/* Write the data page and its offset */
 	SyBigEndianPack64(&pFirst->zData[8/*Next ovfl*/],pCell->iDataPage);
@@ -50142,7 +50165,7 @@ static int lhCellWriteOvflPayload(lhcell *pCell,const void *pKey,sxu32 nKeylen,.
 					return rc;
 				}
 				/* Link */
-				SyBigEndianPack64(pOvfl->zData,pNew->pgno);
+				SyBigEndianPack64(pOvfl->zData,pNew->iPage);
 				pEngine->pIo->xPageUnref(pOvfl);
 				SyBigEndianPack64(pNew->zData,0); /* Next overflow page on the chain */
 				pOvfl = pNew;
@@ -50181,7 +50204,7 @@ static int lhRestorePage(lhash_kv_engine *pEngine,unqlite_page *pPage)
 	}
 	/* Link to the list of free page */
 	SyBigEndianPack64(pPage->zData,pEngine->nFreeList);
-	pEngine->nFreeList = pPage->pgno;
+	pEngine->nFreeList = pPage->iPage;
 	SyBigEndianPack64(&pEngine->pHeader->zData[4/*Magic*/+4/*Hash*/],pEngine->nFreeList);
 	/* All done */
 	return UNQLITE_OK;
@@ -50451,7 +50474,7 @@ static int lhRecordOverwrite(
 				return rc;
 			}
 			/* Link */
-			SyBigEndianPack64(pOvfl->zData,pNew->pgno);
+			SyBigEndianPack64(pOvfl->zData,pNew->iPage);
 			pEngine->pIo->xPageUnref(pOvfl);
 			SyBigEndianPack64(pNew->zData,0); /* Next overflow page on the chain */
 			pOvfl = pNew;
@@ -50612,7 +50635,7 @@ static int lhRecordAppend(
 				return rc;
 			}
 			/* Link */
-			SyBigEndianPack64(pOvfl->zData,pNew->pgno);
+			SyBigEndianPack64(pOvfl->zData,pNew->iPage);
 			pEngine->pIo->xPageUnref(pOvfl);
 			SyBigEndianPack64(pNew->zData,0); /* Next overflow page on the chain */
 			pOvfl = pNew;
@@ -50823,8 +50846,8 @@ static int lhFindSlavePage(lhpage *pPage,sxu64 nAmount,sxu16 *pOfft,lhpage **ppS
 		goto fail;
 	}
 	/* Reflect in the page header */
-	SyBigEndianPack64(&pSlave->pRaw->zData[2/*Cell offset*/+2/*Free block offset*/],pRaw->pgno);
-	pSlave->sHdr.iSlave = pRaw->pgno;
+	SyBigEndianPack64(&pSlave->pRaw->zData[2/*Cell offset*/+2/*Free block offset*/],pRaw->iPage);
+	pSlave->sHdr.iSlave = pRaw->iPage;
 	/* All done */
 	*ppSlave = pNew;
 	return UNQLITE_OK;
@@ -51003,12 +51026,12 @@ static int lhSplit(lhpage *pTarget,int *pRetry)
 	/* Install and write the logical map record */
 	rc = lhMapWriteRecord(pEngine,
 		pEngine->split_bucket + pEngine->max_split_bucket,
-		pRaw->pgno
+		pRaw->iPage
 		);
 	if( rc != UNQLITE_OK ){
 		goto fail;
 	}
-	if( pTarget->pRaw->pgno == pOld->pRaw->pgno ){
+	if( pTarget->pRaw->iPage == pOld->pRaw->iPage ){
 		*pRetry = 1;
 	}
 	/* Perform the split */
@@ -51131,7 +51154,7 @@ retry:
 		rc = lhStoreCell(pPage,pKey,nKeyLen,pData,nDataLen,nHash,1);
 		if( rc == UNQLITE_OK ){
 			/* Install and write the logical map record */
-			rc = lhMapWriteRecord(pEngine,iBucket,pRaw->pgno);
+			rc = lhMapWriteRecord(pEngine,iBucket,pRaw->iPage);
 		}
 		pEngine->pIo->xPageUnref(pRaw);
 		return rc;
@@ -51219,7 +51242,7 @@ static int lhash_write_header(lhash_kv_engine *pEngine,unqlite_page *pHeader)
 	/* Initialize the bucket map */
 	pMap = &pEngine->sPageMap;
 	/* Fill in the structure */
-	pMap->iNum = pHeader->pgno;
+	pMap->iNum = pHeader->iPage;
 	/* Next page in the bucket map */
 	SyBigEndianPack64(zRaw,0);
 	zRaw += 8;
@@ -55432,6 +55455,9 @@ UNQLITE_PRIVATE const unqlite_vfs * unqliteExportBuiltinVfs(void)
 **  
 **
 */
+#ifndef NULL
+#define NULL 0
+#endif
 #define PAGER_OPEN                  0
 #define PAGER_READER                1
 #define PAGER_WRITER_LOCKED         2
@@ -60241,3 +60267,66 @@ UNQLITE_PRIVATE int unqliteRegisterJx9Functions(unqlite_vm *pVm)
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
+unqlite_kv_cursor* unqlite_yfext_kv_prefetch(unqlite *pDb,const void *pKey,int nKeyLen, unqlite_int64 *pBufLen)
+{
+  unqlite_kv_methods* pMethods;
+  unqlite_kv_engine * pEngine;
+  unqlite_kv_cursor * pCur;
+  int               rc;
+
+  if (UNQLITE_DB_MISUSE(pDb))
+  {
+    return 0;
+  }
+
+  /* Point to the underlying storage engine */
+  pEngine  = unqlitePagerGetKvEngine(pDb);
+  pMethods = pEngine->pIo->pMethods;
+  pCur     = pDb->sDB.pCursor;
+  if (nKeyLen < 0)
+  {
+    /* Assume a null terminated string and compute it's length */
+    nKeyLen = SyStrlen((const char*) pKey);
+  }
+  if (!nKeyLen)
+  {
+    unqliteGenError(pDb, "Empty key");
+    rc = UNQLITE_EMPTY;
+  }
+  else
+  {
+    /* Seek to the record position */
+    rc = pMethods->xSeek(pCur, pKey, nKeyLen, UNQLITE_CURSOR_MATCH_EXACT);
+  }
+  if (rc == UNQLITE_OK)
+  {
+    /* Data length only */
+    rc = pMethods->xDataLength(pCur, pBufLen);
+  }
+
+  if (rc == UNQLITE_OK)
+  {
+    return pCur;
+  }
+
+  return 0;
+}
+
+int unqlite_yfext_kv_postfetch(unqlite_kv_cursor* pCur, void *pBuf, unqlite_int64 *pBufLen)
+{
+  int               rc;
+
+  SyBlob sBlob;
+
+  /* Initialize the data consumer */
+  SyBlobInitFromBuf(&sBlob, pBuf, (sxu32) *pBufLen);
+  /* Consume the data */
+  rc = pCur->pStore->pIo->pMethods->xData(pCur, unqliteDataConsumer, &sBlob);
+  /* Data length */
+  *pBufLen = (unqlite_int64) SyBlobLength(&sBlob);
+  /* Cleanup */
+  SyBlobRelease(&sBlob);
+
+  return rc;
+}

@@ -56,76 +56,100 @@ struct json_private_data
  * (i.e. the brackets "[{]}", colon ":" and comma ",").
  */
 static sxi32 VmJsonEncode(
-	jx9_value *pIn,          /* Encode this value */
-	json_private_data *pData /* Context data */
-	){
-		SyBlob *pOut = pData->pOut;
-		int nByte;
-		if( jx9_value_is_null(pIn) || jx9_value_is_resource(pIn)){
-			/* null */
-			SyBlobAppend(pOut, "null", sizeof("null")-1);
-		}else if( jx9_value_is_bool(pIn) ){
-			int iBool = jx9_value_to_bool(pIn);
-			sxu32 iLen;
-			/* true/false */
-			iLen = iBool ? sizeof("true") : sizeof("false");
-			SyBlobAppend(pOut, iBool ? "true" : "false", iLen-1);
-		}else if(  jx9_value_is_numeric(pIn) && !jx9_value_is_string(pIn) ){
-			const char *zNum;
-			/* Get a string representation of the number */
-			zNum = jx9_value_to_string(pIn, &nByte);
-			SyBlobAppend(pOut,zNum,nByte);
-		}else if( jx9_value_is_string(pIn) ){
-				const char *zIn, *zEnd;
-				int c;
-				/* Encode the string */
-				zIn = jx9_value_to_string(pIn, &nByte);
-				zEnd = &zIn[nByte];
-				/* Append the double quote */
-				SyBlobAppend(pOut,"\"", sizeof(char));
-				for(;;){
-					if( zIn >= zEnd ){
-						/* No more input to process */
-						break;
-					}
-					c = zIn[0];
-					/* Advance the stream cursor */
-					zIn++;
-					if( c == '"' || c == '\\' ){
-						/* Unescape the character */
-						SyBlobAppend(pOut,"\\", sizeof(char));
-					}
-					/* Append character verbatim */
-					SyBlobAppend(pOut,(const char *)&c,sizeof(char));
-				}
-				/* Append the double quote */
-				SyBlobAppend(pOut,"\"",sizeof(char));
-		}else if( jx9_value_is_json_array(pIn) ){
-			/* Encode the array/object */
-			pData->isFirst = 1;
-			if( jx9_value_is_json_object(pIn) ){
-				/* Encode the object instance */
-				pData->isFirst = 1;
-				/* Append the curly braces */
-				SyBlobAppend(pOut, "{",sizeof(char));
-				/* Iterate throw object attribute */
-				jx9_array_walk(pIn,VmJsonObjectEncode, pData);
-				/* Append the closing curly braces  */
-				SyBlobAppend(pOut, "}",sizeof(char));
-			}else{
-				/* Append the square bracket or curly braces */
-				SyBlobAppend(pOut,"[",sizeof(char));
-				/* Iterate throw array entries */
-				jx9_array_walk(pIn, VmJsonArrayEncode, pData);
-				/* Append the closing square bracket or curly braces */
-				SyBlobAppend(pOut,"]",sizeof(char));
-			}
-		}else{
-			/* Can't happen */
-			SyBlobAppend(pOut,"null",sizeof("null")-1);
-		}
-		/* All done */
-		return JX9_OK;
+  jx9_value *pIn,          /* Encode this value */
+  json_private_data *pData /* Context data */
+){
+  SyBlob *pOut = pData->pOut;
+  int nByte;
+  if( jx9_value_is_null(pIn) || jx9_value_is_resource(pIn)){
+    /* null */
+    SyBlobAppend(pOut, "null", sizeof("null")-1);
+  }else if( jx9_value_is_bool(pIn) ){
+    int iBool = jx9_value_to_bool(pIn);
+    sxu32 iLen;
+    /* true/false */
+    iLen = iBool ? sizeof("true") : sizeof("false");
+    SyBlobAppend(pOut, iBool ? "true" : "false", iLen-1);
+  }else if(  jx9_value_is_numeric(pIn) && !jx9_value_is_string(pIn) ){
+    const char *zNum;
+    /* Get a string representation of the number */
+    zNum = jx9_value_to_string(pIn, &nByte);
+    SyBlobAppend(pOut,zNum,nByte);
+  }else if( jx9_value_is_string(pIn) ){
+    const char *zIn, *zEnd;
+    int c;
+    int bApplyOriginal;
+    /* Encode the string */
+    zIn = jx9_value_to_string(pIn, &nByte);
+    zEnd = &zIn[nByte];
+    /* Append the double quote */
+    SyBlobAppend(pOut,"\"", sizeof(char));
+    for(;;){
+      if( zIn >= zEnd ){
+        /* No more input to process */
+        break;
+      }
+      c = zIn[0];
+      /* Advance the stream cursor */
+      zIn++;
+      if( c == '"' || c == '\\'){
+        /* Unescape the character */
+        SyBlobAppend(pOut,"\\", sizeof(char));
+        bApplyOriginal = 1;
+      }
+      else if(c == '\n'){
+        SyBlobAppend(pOut,"\\n", sizeof(char) * 2);
+        bApplyOriginal = 0;
+      }
+      else if(c == '\r'){
+        SyBlobAppend(pOut,"\\r", sizeof(char) * 2);
+        bApplyOriginal = 0;
+      }
+      else if(c == '\t'){
+        SyBlobAppend(pOut,"\\t", sizeof(char) * 2);
+        bApplyOriginal = 0;
+      }
+      else if(c == '\f'){
+        SyBlobAppend(pOut,"\\f", sizeof(char) * 2);
+        bApplyOriginal = 0;
+      }
+      else{
+        bApplyOriginal = 1;
+      }
+
+      if(bApplyOriginal){
+        /* Append character verbatim */
+        SyBlobAppend(pOut, (const char*) &c, sizeof(char));
+      }
+    }
+    /* Append the double quote */
+    SyBlobAppend(pOut,"\"",sizeof(char));
+  }else if( jx9_value_is_json_array(pIn) ){
+    /* Encode the array/object */
+    pData->isFirst = 1;
+    if( jx9_value_is_json_object(pIn) ){
+      /* Encode the object instance */
+      pData->isFirst = 1;
+      /* Append the curly braces */
+      SyBlobAppend(pOut, "{",sizeof(char));
+      /* Iterate throw object attribute */
+      jx9_array_walk(pIn,VmJsonObjectEncode, pData);
+      /* Append the closing curly braces  */
+      SyBlobAppend(pOut, "}",sizeof(char));
+    }else{
+      /* Append the square bracket or curly braces */
+      SyBlobAppend(pOut,"[",sizeof(char));
+      /* Iterate throw array entries */
+      jx9_array_walk(pIn, VmJsonArrayEncode, pData);
+      /* Append the closing square bracket or curly braces */
+      SyBlobAppend(pOut,"]",sizeof(char));
+    }
+  }else{
+    /* Can't happen */
+    SyBlobAppend(pOut,"null",sizeof("null")-1);
+  }
+  /* All done */
+  return JX9_OK;
 }
 /*
  * The following walker callback is invoked each time we need

@@ -4,7 +4,10 @@
 /* Make sure we can call this stuff from C++ */
 #ifdef __cplusplus
  extern "C" {
-#endif 
+#endif
+
+#define UNQLITE_ENABLE_THREADS
+
 /*
  * Symisc UnQLite: An Embeddable NoSQL (Post Modern) Database Engine.
  * Copyright (C) 2012-2019, Symisc Systems http://unqlite.org/
@@ -288,13 +291,10 @@ struct SyMutexMethods
 	int (*xTryEnter)(SyMutex *);    /* [Optional:] Try to enter a mutex */
 	void  (*xLeave)(SyMutex *);	    /* [Required:] Leave a locked mutex */
 };
-#if defined (_MSC_VER) || defined (__MINGW32__) ||  defined (__GNUC__) && defined (__declspec)
-#define SX_APIIMPORT	__declspec(dllimport)
-#define SX_APIEXPORT	__declspec(dllexport)
-#else
+
 #define	SX_APIIMPORT
 #define	SX_APIEXPORT
-#endif
+
 /* Standard return values from Symisc public interfaces */
 #define SXRET_OK       0      /* Not an error */	
 #define SXERR_MEM      (-1)   /* Out of memory */
@@ -662,7 +662,7 @@ struct unqlite_page
 {
   unsigned char *zData;       /* Content of this page */
   void *pUserData;            /* Extra content */
-  pgno pgno;                  /* Page number for this page */
+  pgno iPage;                 /* Page number for this page */
 };
 /*
  * UnQLite handle to the underlying Key/Value Storage Engine (See below).
@@ -950,6 +950,10 @@ UNQLITE_APIEXPORT const char * unqlite_lib_version(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_signature(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_ident(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_copyright(void);
+
+/* EYEFACTIVE EXTENSIONS */
+UNQLITE_APIEXPORT unqlite_kv_cursor* unqlite_yfext_kv_prefetch(unqlite *pDb,const void *pKey,int nKeyLen, unqlite_int64 *pBufLen);
+UNQLITE_APIEXPORT int unqlite_yfext_kv_postfetch(unqlite_kv_cursor* pCur, void *pBuf, unqlite_int64 *pBufLen);
 #ifdef __cplusplus
  }
 #endif
