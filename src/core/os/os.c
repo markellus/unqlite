@@ -11,9 +11,8 @@
  *      http://unqlite.org/licensing.html
  */
  /* $SymiscID: os.c v1.0 FreeBSD 2012-11-12 21:27 devel <chm@symisc.net> $ */
-#ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
-#endif
+
 /* OS interfaces abstraction layers: Mostly SQLite3 source tree */
 /*
 ** The following routines are convenience wrappers around methods

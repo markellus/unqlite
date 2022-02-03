@@ -12,9 +12,8 @@
  *      http://unqlite.org/licensing.html
  */
  /* $SymiscID: pager.c v1.1 Win7 2012-11-29 03:46 stable <chm@symisc.net> $ */
-#ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
-#endif
+
 /*
 ** This file implements the pager and the transaction manager for UnQLite (Mostly inspired from the SQLite3 Source tree).
 **

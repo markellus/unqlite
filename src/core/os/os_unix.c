@@ -11,9 +11,8 @@
  *      http://unqlite.org/licensing.html
  */
  /* $SymiscID: os_unix.c v1.3 FreeBSD 2013-04-05 01:10 devel <chm@symisc.net> $ */
-#ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
-#endif
+
 /* 
  * Omit the whole layer from the build if compiling for platforms other than Unix (Linux, BSD, Solaris, OS X, etc.).
  * Note: Mostly SQLite3 source tree.

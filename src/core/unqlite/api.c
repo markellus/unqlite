@@ -11,9 +11,8 @@
  *      http://unqlite.org/licensing.html
  */
  /* $SymiscID: api.c v2.0 FreeBSD 2012-11-08 23:07 stable <chm@symisc.net> $ */
-#ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
-#endif
+
 /* This file implement the public interfaces presented to host-applications.
  * Routines in other files are for internal use by UnQLite and should not be
  * accessed by users of the library.

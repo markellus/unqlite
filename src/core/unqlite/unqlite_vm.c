@@ -11,9 +11,7 @@
  *      http://unqlite.org/licensing.html
  */
  /* $SymiscID: unqlite_vm.c v1.0 Win7 2013-01-29 23:37 stable <chm@symisc.net> $ */
-#ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
-#endif
 /* This file deals with low level stuff related to the unQLite Virtual Machine */
 
 /* Record ID as a hash value */

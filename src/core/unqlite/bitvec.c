@@ -11,9 +11,7 @@
  *      http://unqlite.org/licensing.html
  */
  /* $SymiscID: bitvec.c v1.0 Win7 2013-02-27 15:16 stable <chm@symisc.net> $ */
-#ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
-#endif
 
 /** This file implements an object that represents a dynmaic
 ** bitmap.

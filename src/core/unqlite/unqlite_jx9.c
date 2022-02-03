@@ -11,9 +11,8 @@
  *      http://unqlite.org/licensing.html
  */
  /* $SymiscID: unql_jx9.c v1.2 FreeBSD 2013-01-24 22:45 stable <chm@symisc.net> $ */
-#ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
-#endif
+
 /* 
  * This file implements UnQLite functions (db_exists(), db_create(), db_put(), db_get(), etc.) for the
  * underlying Jx9 Virtual Machine. 

@@ -11,9 +11,8 @@
  *      http://unqlite.org/licensing.html
  */
  /* $SymiscID: fastjson.c v1.1 FreeBSD 2012-12-05 22:52 stable <chm@symisc.net> $ */
-#ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
-#endif
+
 /* JSON binary encoding, decoding and stuff like that */
 #ifndef UNQLITE_FAST_JSON_NEST_LIMIT
 #if defined(__WINNT__) || defined(__UNIXES__)

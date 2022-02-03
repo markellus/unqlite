@@ -14,15 +14,10 @@
 #ifndef __UNQLITEINT_H__
 #define __UNQLITEINT_H__
 /* Internal interface definitions for UnQLite. */
-#ifdef UNQLITE_AMALGAMATION
-/* Marker for routines not intended for external use */
-#define UNQLITE_PRIVATE static
-#define JX9_AMALGAMATION
-#else
 #define UNQLITE_PRIVATE
 #include "unqlite.h"
 #include "jx9Int.h"
-#endif 
+
 /* forward declaration */
 typedef struct unqlite_db unqlite_db;
 /*

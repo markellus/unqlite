@@ -12,9 +12,8 @@
  *      http://unqlite.org/licensing.html
  */
  /* $SymiscID: lhash_kv.c v1.7 Solaris 2013-01-14 12:56 stable <chm@symisc.net> $ */
-#ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
-#endif
+
 /* 
  * This file implements disk based hashtable using the linear hashing algorithm.
  * This implementation is the one decribed in the paper:

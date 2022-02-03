@@ -8,20 +8,51 @@ IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   SET(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "default install path" FORCE)
 ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-OPTION(ENABLE_THREADS "Enable threads" OFF)
+OPTION(ENABLE_THREADS "Enable threads (C-API ONLY)" OFF)
 
 IF(${ENABLE_THREADS})
   ADD_DEFINITIONS("-DUNQLITE_ENABLE_THREADS")
 ENDIF(${ENABLE_THREADS})
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_LIST_DIR}/src)
+INCLUDE_DIRECTORIES(
+        ${CMAKE_CURRENT_LIST_DIR}/src
+        ${CMAKE_CURRENT_LIST_DIR}/include
+)
 
 SET(HEADERS_UNQLITE
-  unqlite.h
+        ${CMAKE_CURRENT_LIST_DIR}/include/unqlite.h
+        ${CMAKE_CURRENT_LIST_DIR}/include/jx9.h
+        ${CMAKE_CURRENT_LIST_DIR}/include/jx9Int.h
+        ${CMAKE_CURRENT_LIST_DIR}/include/unqliteInt.h
 )
 
 SET(SOURCES_UNQLITE
-  unqlite.c
+
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_api.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_builtin.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_compile.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_const.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_hashmap.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_json.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_lex.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_lib.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_memobj.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_parse.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_vfs.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/jx9/jx9_vm.c
+
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/os/os.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/os/os_unix.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/os/os_win.c
+
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/unqlite/api.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/unqlite/bitvec.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/unqlite/fastjson.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/unqlite/lhash_kv.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/unqlite/mem_kv.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/unqlite/pager.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/unqlite/unqlite_jx9.c
+        ${CMAKE_CURRENT_LIST_DIR}/src/core/unqlite/unqlite_vm.c
 )
 
 SET(UNQLITE_STATIC_LIB unqlite)
