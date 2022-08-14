@@ -1,7 +1,7 @@
 /*
  * Symisc unQLite: An Embeddable NoSQL (Post Modern) Database Engine.
  * Copyright (C) 2012-2013, Symisc Systems http://unqlite.org/
- * Version 1.1.6
+ * Version 1.1.9
  * For information on licensing, redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES
  * please contact Symisc Systems via:
  *       legal@symisc.net

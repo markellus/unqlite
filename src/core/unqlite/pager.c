@@ -2,7 +2,7 @@
  * Symisc unQLite: An Embeddable NoSQL (Post Modern) Database Engine.
  * Copyright (C) 2012-2013, Symisc Systems http://unqlite.org/
  * Copyright (C) 2014, Yuras Shumovich <shumovichy@gmail.com>
- * Version 1.1.6
+ * Version 1.1.9
  * For information on licensing, redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES
  * please contact Symisc Systems via:
  *       legal@symisc.net
@@ -2116,7 +2116,7 @@ UNQLITE_PRIVATE int unqlitePagerRollback(Pager *pPager,int bResetKvEngine)
 		return UNQLITE_OK;
 	}
 	if( pPager->is_mem ){
-		/* As of this release 1.1.6: Transactions are not supported for in-memory databases */
+		/* As of this release 1.1.9: Transactions are not supported for in-memory databases */
 		return UNQLITE_OK;
 	}
 	if( pPager->is_rdonly ){
