@@ -179,6 +179,7 @@ typedef sxi64 jx9_int64;
 #define JX9_VM_CONFIG_IO_STREAM        UNQLITE_VM_CONFIG_IO_STREAM  /* ONE ARGUMENT: const jx9_io_stream *pStream */
 #define JX9_VM_CONFIG_ARGV_ENTRY       UNQLITE_VM_CONFIG_ARGV_ENTRY  /* ONE ARGUMENT: const char *zValue */
 #define JX9_VM_CONFIG_EXTRACT_OUTPUT   UNQLITE_VM_CONFIG_EXTRACT_OUTPUT  /* TWO ARGUMENTS: const void **ppOut, unsigned int *pOutputLen */
+
 /*
  * Global Library Configuration Commands.
  *

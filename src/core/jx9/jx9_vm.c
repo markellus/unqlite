@@ -1011,6 +1011,8 @@ JX9_PRIVATE sxi32 jx9VmReset(jx9_vm *pVm)
 	/* TICKET 1433-003: As of this version, the VM is automatically reset */
 	SyBlobReset(&pVm->sConsumer);
 	jx9MemObjRelease(&pVm->sExec);
+  jx9HashmapLoadBuiltin(&(*pVm));
+
 	/* Set the ready flag */
 	pVm->nMagic = JX9_VM_RUN;
 	return SXRET_OK;

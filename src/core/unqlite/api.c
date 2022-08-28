@@ -2788,3 +2788,66 @@ UNQLITE_APIEXPORT unsigned int unqlite_util_random_num(unqlite *pDb)
 #endif
 	 return iNum;
 }
+
+unqlite_kv_cursor* unqlite_yfext_kv_prefetch(unqlite *pDb,const void *pKey,int nKeyLen, unqlite_int64 *pBufLen)
+{
+  unqlite_kv_methods* pMethods;
+  unqlite_kv_engine * pEngine;
+  unqlite_kv_cursor * pCur;
+  int               rc;
+
+  if (UNQLITE_DB_MISUSE(pDb))
+  {
+    return 0;
+  }
+
+  /* Point to the underlying storage engine */
+  pEngine  = unqlitePagerGetKvEngine(pDb);
+  pMethods = pEngine->pIo->pMethods;
+  pCur     = pDb->sDB.pCursor;
+  if (nKeyLen < 0)
+  {
+    /* Assume a null terminated string and compute it's length */
+    nKeyLen = SyStrlen((const char*) pKey);
+  }
+  if (!nKeyLen)
+  {
+    unqliteGenError(pDb, "Empty key");
+    rc = UNQLITE_EMPTY;
+  }
+  else
+  {
+    /* Seek to the record position */
+    rc = pMethods->xSeek(pCur, pKey, nKeyLen, UNQLITE_CURSOR_MATCH_EXACT);
+  }
+  if (rc == UNQLITE_OK)
+  {
+    /* Data length only */
+    rc = pMethods->xDataLength(pCur, pBufLen);
+  }
+
+  if (rc == UNQLITE_OK)
+  {
+    return pCur;
+  }
+
+  return 0;
+}
+
+int unqlite_yfext_kv_postfetch(unqlite_kv_cursor* pCur, void *pBuf, unqlite_int64 *pBufLen)
+{
+  int               rc;
+
+  SyBlob sBlob;
+
+  /* Initialize the data consumer */
+  SyBlobInitFromBuf(&sBlob, pBuf, (sxu32) *pBufLen);
+  /* Consume the data */
+  rc = pCur->pStore->pIo->pMethods->xData(pCur, unqliteDataConsumer, &sBlob);
+  /* Data length */
+  *pBufLen = (unqlite_int64) SyBlobLength(&sBlob);
+  /* Cleanup */
+  SyBlobRelease(&sBlob);
+
+  return rc;
+}
