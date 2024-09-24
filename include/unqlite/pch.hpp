@@ -1,8 +1,11 @@
 #pragma once
 
+#include <cstdlib>
 #include <memory>
 #include <vector>
 #include <tuple>
+#include <string>
+#include <stdexcept>
 #include "core/unqlite.h"
 
 #ifdef UNQLITE_ENABLE_THREADS
